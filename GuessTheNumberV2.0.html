@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Guess the Number</title>
+    <style>
+        :root {
+            --primary-color: #4a4e69;
+            --secondary-color: #9a8c98;
+            --accent-color: #c9ada7;
+            --background-color: #f2e9e4;
+            --text-color: #22223b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        .game-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 750px;
+            width: 100%;
+        }
+        h1 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+        #guessBar {
+            width: 100%;
+            height: 10px;
+            background-color: var(--background-color);
+            margin: 20px 0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #guessIndicator {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent-color);
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+        #message, #highScore {
+            margin: 10px 0;
+        }
+        #highScore {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+        }
+        .confetti {
+            position: fixed;
+            z-index: 1000;
+            will-change: transform, opacity;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Guess the Number</h1>
+        <p>I'm thinking of a number between 1 and 1000.</p>
+        <input type="number" id="guess" min="1" max="1000" placeholder="Enter your guess">
+        <button onclick="checkGuess()">Submit Guess</button>
+        <div id="guessBar"><div id="guessIndicator"></div></div>
+        <p id="message"></p>
+        <p id="highScore">High Score: -</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script>
+        let targetNumber;
+        let attempts;
+        let highScore = localStorage.getItem('highScore') || Infinity;
+
+        initializeGame();
+
+        function initializeGame() {
+            targetNumber = Math.floor(Math.random() * 1000) + 1;
+            attempts = 0;
+            updateHighScore();
+            document.getElementById('guess').value = '';
+            document.getElementById('message').textContent = '';
+            document.getElementById('guessIndicator').style.width = '0%';
+        }
+
+        function checkGuess() {
+            let guess = parseInt(document.getElementById('guess').value);
+            attempts++;
+
+            updateGuessBar(guess);
+            animateAttempts(attempts);
+
+            if (guess == targetNumber) {
+                document.getElementById('message').textContent = `Congratulations! You guessed it in ${attempts} attempts!`;
+                if (attempts < highScore) {
+                    highScore = attempts;
+                    localStorage.setItem('highScore', highScore);
+                    updateHighScore();
+                }
+                createConfetti();
+            } else {
+                document.getElementById('message').textContent = guess < targetNumber ? 'Too low! Try again.' : 'Too high! Try again.';
+            }
+        }
+
+        function updateHighScore() {
+            document.getElementById('highScore').textContent = `High Score: ${highScore === Infinity ? '-' : highScore}`;
+        }
+
+        function updateGuessBar(guess) {
+            let indicator = document.getElementById('guessIndicator');
+            let difference = Math.abs(targetNumber - guess);
+            let percentage = 100 - (difference / 10);
+            indicator.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+        }
+
+        function createConfetti() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            const shapes = ['circle', 'square', 'triangle'];
+
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const shape = shapes[Math.floor(Math.random() * shapes.length)];
+                const size = Math.random() * 10 + 5;
+
+                confetti.style.backgroundColor = color;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.position = 'fixed';
+                confetti.style.top = '-5vh';
+                confetti.style.left = `${Math.random() * 100}vw`;
+
+                if (shape === 'circle') {
+                    confetti.style.borderRadius = '50%';
+                } else if (shape === 'triangle') {
+                    confetti.style.width = '0';
+                    confetti.style.height = '0';
+                    confetti.style.backgroundColor = 'transparent';
+                    confetti.style.borderLeft = `${size / 2}px solid transparent`;
+                    confetti.style.borderRight = `${size / 2}px solid transparent`;
+                    confetti.style.borderBottom = `${size}px solid ${color}`;
+                }
+
+                document.body.appendChild(confetti);
+
+                anime({
+                    targets: confetti,
+                    top: '105vh',
+                    left: `+=${anime.random(-20, 20)}vw`,
+                    rotate: anime.random(0, 360) + 'deg',
+                    scale: [1, 0],
+                    opacity: {
+                        value: [1, 0],
+                        duration: 2000,
+                        easing: 'linear'
+                    },
+                    duration: anime.random(1500, 3000),
+                    easing: 'easeOutCubic',
+                    complete: function(anim) {
+                        confetti.remove();
+                    }
+                });
+            }
+        }
+
+        function animateAttempts(newValue) {
+            const attemptsElement = document.getElementById('attempts')?.querySelector('span');
+            if (!attemptsElement) return;
+            
+            const startValue = parseInt(attemptsElement.textContent);
+            anime({
+                targets: {value: startValue},
+                value: newValue,
+                round: 1,
+                easing: 'easeInOutExpo',
+                duration: 500,
+                update: function() {
+                    attemptsElement.textContent = this.targets.value.toFixed(0);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
